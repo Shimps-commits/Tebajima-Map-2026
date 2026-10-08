@@ -37,11 +37,14 @@ function sevRowHTML(s, i) {
 }
 
 function renderCats(body, foot) {
+  const rowsOf = kind => draft.categories.map((c, i) => kindOfCat(c) === kind ? catRowHTML(c, i) : '').join('');
   body.innerHTML =
     '<p class="muted small">種別と危険度は、あとからいつでも変えられます。使われている項目は、削除できません。</p>' +
-    '<h3 class="sec">種別（アイコン・名称・色）</h3><div class="edlist">' + draft.categories.map(catRowHTML).join('') + '</div>' +
-    '<button type="button" class="btn btn-md btn-block btn-dashed" id="c-addcat">' + ic('plus', 16) + '種別を追加</button>' +
-    '<h3 class="sec">危険度（記号・名称・色）</h3>' +
+    '<h3 class="sec">危険個所の種別（アイコン・名称・色）</h3><div class="edlist">' + rowsOf('hazard') + '</div>' +
+    '<button type="button" class="btn btn-md btn-block btn-dashed" id="c-addcat-h">' + ic('plus', 16) + '危険個所の種別を追加</button>' +
+    '<h3 class="sec">見どころの種別（アイコン・名称・色）</h3><div class="edlist">' + rowsOf('spot') + '</div>' +
+    '<button type="button" class="btn btn-md btn-block btn-dashed" id="c-addcat-s">' + ic('plus', 16) + '見どころの種別を追加</button>' +
+    '<h3 class="sec">危険度（記号・名称・色）— 危険個所だけ</h3>' +
     '<p class="muted small">危険度は、形（丸・ひし形・八角形）と「!」の数でも区別されます。4段階目以降は、3段階目と同じ形になります。</p>' +
     '<div class="edlist">' + draft.severities.map(sevRowHTML).join('') + '</div>' +
     '<button type="button" class="btn btn-md btn-block btn-dashed" id="c-addsev">' + ic('plus', 16) + '危険度を追加</button>';
@@ -83,18 +86,22 @@ function renderCats(body, foot) {
     if (act.dataset.act === 'del') {
       const kind = row.dataset.kind, o = objOf(row);
       const used = hazardData.features.filter(f => kind === 'categories' ? f.properties.category === o.id : Number(f.properties.severity) === Number(o.level)).length;
-      if (used) { noticeBox('削除できません', 'この定義は ' + used + ' 件の危険個所で使われています。先に、危険個所側の種別・危険度を変更してください。'); return; }
-      if (draft[kind].length <= 1) { noticeBox('削除できません', '最低1つは必要です。'); return; }
+      if (used) { noticeBox('削除できません', 'この定義は ' + used + ' 件のピンで使われています。先に、ピン側の種別・危険度を変更してください。'); return; }
+      const same = kind === 'categories' ? draft.categories.filter(c => kindOfCat(c) === kindOfCat(o)).length : draft.severities.length;
+      if (same <= 1) { noticeBox('削除できません', '同じ区分に、最低1つは必要です。'); return; }
       draft[kind].splice(Number(row.dataset.i), 1);
       Panel.refresh();
     }
   });
-  $('#c-addcat', body).onclick = () => {
-    draft.categories.push({ id: 'c' + Date.now().toString(36), ja: '新しい種別', en: 'New type', color: '#475569', icon: 'alert' });
+  const addCat = kind => {
+    draft.categories.push({ id: (kind === 'spot' ? 's_' : 'c') + Date.now().toString(36), kind: kind, ja: '新しい種別', en: 'New type', color: kind === 'spot' ? '#0891b2' : '#475569', icon: kind === 'spot' ? 'star' : 'alert' });
     Panel.refresh();
-    const rows = $$('.edrow[data-kind="categories"]', Panel.el); const last = rows[rows.length - 1];
+    const rows = $$('.edrow[data-kind="categories"]', Panel.el);
+    const mine = rows.filter(r => kindOfCat(draft.categories[Number(r.dataset.i)]) === kind); const last = mine[mine.length - 1];
     if (last) last.scrollIntoView({ block: 'center' });
   };
+  $('#c-addcat-h', body).onclick = () => addCat('hazard');
+  $('#c-addcat-s', body).onclick = () => addCat('spot');
   $('#c-addsev', body).onclick = () => {
     const lv = Math.max(0, ...draft.severities.map(s => Number(s.level))) + 1;
     draft.severities.push({ level: lv, ja: '新しい危険度', en: 'New level', mark: '!'.repeat(Math.min(lv, 5)), color: '#dc2626', warn_radius_m: 50 });

@@ -1,12 +1,18 @@
 {
-  "_note": "たたき台。打合せでアプリ内から追加・変更する。icon は、アプリ内のピクトグラム名（rock, wave, slip, paw, boat, sun, wind, drop, bolt, alert, ban）または絵文字。warn_radius_m は第2段階の接近アラート用。",
+  "_note": "たたき台。打合せでアプリ内から追加・変更する。kind は hazard（危険個所）または spot（見どころ）。icon は、アプリ内のピクトグラム名（rock, wave, slip, paw, boat, sun, wind, drop, bolt, alert, ban, mountain, leaf, cup, torii, heart, star, camera, fish, anchor）または絵文字。severities と warn_radius_m は、危険個所用（第2段階の接近アラートでも使う）。",
   "categories": [
-    { "id": "rockfall", "ja": "落石・崖", "en": "Falling rocks / cliffs", "color": "#b45309", "icon": "rock" },
-    { "id": "current",  "ja": "潮流・波", "en": "Tidal currents / waves", "color": "#0369a1", "icon": "wave" },
-    { "id": "footing",  "ja": "足場・滑りやすい場所", "en": "Slippery / unstable footing", "color": "#4d7c0f", "icon": "slip" },
-    { "id": "wildlife", "ja": "生き物", "en": "Wildlife", "color": "#7e22ce", "icon": "paw" },
-    { "id": "vessel",   "ja": "船舶・航路", "en": "Boats / shipping lane", "color": "#be123c", "icon": "boat" },
-    { "id": "other",    "ja": "その他", "en": "Other", "color": "#374151", "icon": "alert" }
+    { "id": "rockfall", "kind": "hazard", "ja": "落石・崖", "en": "Falling rocks / cliffs", "color": "#b45309", "icon": "rock" },
+    { "id": "current",  "kind": "hazard", "ja": "潮流・波", "en": "Tidal currents / waves", "color": "#0369a1", "icon": "wave" },
+    { "id": "footing",  "kind": "hazard", "ja": "足場・滑りやすい場所", "en": "Slippery / unstable footing", "color": "#4d7c0f", "icon": "slip" },
+    { "id": "wildlife", "kind": "hazard", "ja": "生き物", "en": "Wildlife", "color": "#7e22ce", "icon": "paw" },
+    { "id": "vessel",   "kind": "hazard", "ja": "船舶・航路", "en": "Boats / shipping lane", "color": "#be123c", "icon": "boat" },
+    { "id": "other",    "kind": "hazard", "ja": "その他", "en": "Other", "color": "#374151", "icon": "alert" },
+    { "id": "s_view",    "kind": "spot", "ja": "絶景・景色", "en": "Scenic views", "color": "#0891b2", "icon": "mountain" },
+    { "id": "s_nature",  "kind": "spot", "ja": "生き物・自然", "en": "Nature & wildlife", "color": "#15803d", "icon": "leaf" },
+    { "id": "s_surf",    "kind": "spot", "ja": "サーフ・海遊び", "en": "Surf & sea play", "color": "#2563eb", "icon": "wave" },
+    { "id": "s_food",    "kind": "spot", "ja": "食・休憩", "en": "Food & rest", "color": "#ea580c", "icon": "cup" },
+    { "id": "s_culture", "kind": "spot", "ja": "歴史・文化", "en": "History & culture", "color": "#a21caf", "icon": "torii" },
+    { "id": "s_fav",     "kind": "spot", "ja": "お気に入り", "en": "Favorites", "color": "#e11d48", "icon": "heart" }
   ],
   "severities": [
     { "level": 1, "ja": "注意", "en": "Caution", "mark": "!", "color": "#facc15", "warn_radius_m": 20 },

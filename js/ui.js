@@ -203,8 +203,8 @@ function visibleInsets() {
   return { top, bottom, left, right };
 }
 
-function copyText(text) {
-  const done = () => toast(t('copied'));
+function copyText(text, doneMsg) {
+  const done = () => toast(doneMsg || t('copied'));
   if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(done, done); return; }
   const ta = document.createElement('textarea');
   ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';

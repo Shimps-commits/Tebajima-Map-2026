@@ -1,6 +1,6 @@
 {
-  "name": "危険個所マップ / Hazard Map（出羽島・牟岐大島）",
-  "short_name": "Hazard Map",
+  "name": "出羽島・牟岐大島マップ / Tebajima & Mugi-Oshima Map",
+  "short_name": "島マップ",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

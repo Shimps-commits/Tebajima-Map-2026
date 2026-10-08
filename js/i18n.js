@@ -2,7 +2,7 @@
 // 編集モードの画面は日本語のみ（edit.js などに直接書いている）。
 const STRINGS = {
   ja: {
-    title: '危険個所マップ', subtitle: '出羽島・牟岐大島', sample: 'サンプル',
+    title: '出羽島・牟岐大島マップ', subtitle: '危険個所と見どころ', sample: 'サンプル',
     areaLabel: 'エリア', deba: '出羽島', oshima: '牟岐大島',
     strip: '参考情報です。出発前の確認とガイドの案内が前提です。',
     close: '閉じる', langLabel: '言語',
@@ -41,10 +41,32 @@ const STRINGS = {
     themeTitle: '表示設定', themeAuto: '自動', themeLight: 'ライト', themeDark: 'ダーク', langTitle: '言語',
     creditsTitle: '出典・ライセンス', creditGSI: '地図：国土地理院（地理院タイル）', creditOSM: '地図：© OpenStreetMap contributors', creditLeaflet: '地図ライブラリ：Leaflet',
     noindexNote: 'このページは検索エンジンに載せない設定です。URLは、参加者だけにお渡しください。',
-    updateReady: '新しいバージョンがあります', reload: '再読み込み', dataError: 'データを読み込めませんでした'
+    updateReady: '新しいバージョンがあります', reload: '再読み込み', dataError: 'データを読み込めませんでした',
+
+    // ---- 見どころ・マイピン ----
+    kindHazard: '危険個所', kindSpot: '見どころ', kindHazardShort: '危険', kindSpotShort: '見どころ',
+    toggleHazard: '危険個所の表示', toggleSpot: '見どころの表示', showKinds: '表示する', fHazards: '危険個所', fSpots: '見どころ',
+    tabAll: 'すべて', spotDesc: 'おすすめポイント', spotTip: 'ヒント・楽しみ方', author: '投稿：{n}',
+    chipMine: 'マイピン', chipVisitor: 'みんなの投稿', mineNoteShort: 'あなたの端末の中だけに保存されています',
+    btnEdit: '編集', btnDelete: '削除', btnSend: '運営に送る', btnSave: '保存', btnCancel: 'キャンセル',
+    dockAddSpot: '見どころを追加',
+    placeTap: '地図をタップして場所を指定', placeClick: '地図をクリックして場所を指定',
+    placeSub: '置いたあとも、ドラッグで位置を直せます', placeCenter: '中央に置く',
+    mineTitleNew: '見どころを追加', mineTitleEdit: 'マイピンを編集',
+    fType: '種別', fName: 'なまえ', fNamePh: '例：朝日がきれいな岬', fComment: 'おすすめポイント', fCommentPh: '例：朝日が海から昇るのが見えます',
+    fNick: 'ニックネーム（任意）', fPos: '位置', fDrag: 'ドラッグで微調整', needName: 'なまえを入力してください',
+    mineIntro: 'このピンは、あなたの端末の中だけに保存されます。「運営に送る」と、みんなの地図に載せる提案ができます。',
+    mineSaved: 'マイピンを保存しました', mineDeleted: 'マイピンを削除しました', mineDelAsk: 'このマイピンを削除しますか？',
+    discardAsk: '入力内容を破棄しますか？', discardMsg: '保存していない内容は失われます。', keepEditing: '編集を続ける', discard: '破棄する', delete: '削除する',
+    sendTitle: '運営に送る', sendMsg: '提案文を作りました。送り方を選んでください。あなたが送るまで、内容はどこにも送信されません。',
+    sendShare: '共有する', sendMail: 'メールで送る', sendCopy: 'コピーする', sendCopied: 'コピーしました。メッセージなどに貼り付けて送ってください',
+    sendHeader: '【見どころの提案】出羽島・牟岐大島マップ', sendPlace: '場所', sendName: 'なまえ', sendNote: 'おすすめ', sendNick: 'ニックネーム',
+    sendData: '以下は運営用のデータです（消さないでください）',
+    mineSection: 'マイピン', mineCount: '{n} 件（この端末の中だけ）', mineSendAll: 'すべて運営に送る', mineExport: 'ファイルで保存',
+    mineClear: 'すべて削除', mineClearAsk: 'マイピンをすべて削除しますか？', mineNone: 'まだありません。下の「＋」から、見どころを追加できます。'
   },
   en: {
-    title: 'Hazard Map', subtitle: 'Tebajima · Mugi-Oshima', sample: 'SAMPLE',
+    title: 'Tebajima & Mugi-Oshima', subtitle: 'Hazards & spots', sample: 'SAMPLE',
     areaLabel: 'Area', deba: 'Tebajima', oshima: 'Mugi-Oshima',
     strip: 'Reference only. Check before you go and follow your guide.',
     close: 'Close', langLabel: 'Language',
@@ -83,7 +105,29 @@ const STRINGS = {
     themeTitle: 'Appearance', themeAuto: 'Auto', themeLight: 'Light', themeDark: 'Dark', langTitle: 'Language',
     creditsTitle: 'Credits', creditGSI: 'Map: Geospatial Information Authority of Japan (GSI tiles)', creditOSM: 'Map: © OpenStreetMap contributors', creditLeaflet: 'Map library: Leaflet',
     noindexNote: 'This page is not indexed by search engines. Share the URL only with participants.',
-    updateReady: 'A new version is available', reload: 'Reload', dataError: 'Failed to load data'
+    updateReady: 'A new version is available', reload: 'Reload', dataError: 'Failed to load data',
+
+    // ---- Spots & My pins ----
+    kindHazard: 'Hazards', kindSpot: 'Spots', kindHazardShort: 'Hazards', kindSpotShort: 'Spots',
+    toggleHazard: 'Show hazards', toggleSpot: 'Show spots', showKinds: 'Show', fHazards: 'Hazards', fSpots: 'Spots',
+    tabAll: 'All', spotDesc: "Why it's special", spotTip: 'Tips', author: 'By {n}',
+    chipMine: 'My pin', chipVisitor: 'Visitor pick', mineNoteShort: 'Saved only on your device',
+    btnEdit: 'Edit', btnDelete: 'Delete', btnSend: 'Send to organizers', btnSave: 'Save', btnCancel: 'Cancel',
+    dockAddSpot: 'Add a spot',
+    placeTap: 'Tap the map to choose a place', placeClick: 'Click the map to choose a place',
+    placeSub: 'You can drag the pin to adjust it afterwards', placeCenter: 'Place at center',
+    mineTitleNew: 'Add a spot', mineTitleEdit: 'Edit my pin',
+    fType: 'Type', fName: 'Name', fNamePh: 'e.g. Sunrise point', fComment: "Why it's special", fCommentPh: 'e.g. You can watch the sun rise over the sea',
+    fNick: 'Nickname (optional)', fPos: 'Location', fDrag: 'Drag to fine-tune', needName: 'Please enter a name',
+    mineIntro: 'This pin is saved only on your device. Use "Send to organizers" to suggest it for the shared map.',
+    mineSaved: 'Saved to My pins', mineDeleted: 'My pin deleted', mineDelAsk: 'Delete this pin?',
+    discardAsk: 'Discard your changes?', discardMsg: 'Unsaved changes will be lost.', keepEditing: 'Keep editing', discard: 'Discard', delete: 'Delete',
+    sendTitle: 'Send to organizers', sendMsg: 'Your suggestion is ready. Choose how to send it. Nothing is sent anywhere until you send it yourself.',
+    sendShare: 'Share', sendMail: 'Send by email', sendCopy: 'Copy', sendCopied: 'Copied. Paste it into a message to send it.',
+    sendHeader: '[Spot suggestion] Tebajima & Mugi-Oshima Map', sendPlace: 'Place', sendName: 'Name', sendNote: 'Why it\'s special', sendNick: 'Nickname',
+    sendData: 'The data below is for the organizers (please do not delete it)',
+    mineSection: 'My pins', mineCount: '{n} on this device only', mineSendAll: 'Send all to organizers', mineExport: 'Save as file',
+    mineClear: 'Delete all', mineClearAsk: 'Delete all of your pins?', mineNone: 'None yet. Tap "+" below to add a spot.'
   }
 };
 
@@ -112,7 +156,7 @@ function setLang(l) {
   lang = STRINGS[l] ? l : 'ja';
   try { localStorage.setItem('lang', lang); } catch (e) {}
   document.documentElement.lang = lang;
-  document.title = lang === 'ja' ? '危険個所マップ | 出羽島・牟岐大島' : 'Hazard Map | Tebajima & Mugi-Oshima';
+  document.title = lang === 'ja' ? '出羽島・牟岐大島マップ' : 'Tebajima & Mugi-Oshima Map';
   applyI18n();
   document.querySelectorAll('#lang-seg [data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
 }

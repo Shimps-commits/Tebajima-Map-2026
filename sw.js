@@ -1,6 +1,6 @@
 // Service Worker：アプリ本体とデータを保存し、閲覧した地図タイルを端末内に残す。
 // ファイルを更新して公開したら、VERSION を上げると端末側が入れ替わる。
-const VERSION = 'v2';
+const VERSION = 'v3';
 const APP_CACHE = 'app-' + VERSION;
 const TILE_CACHE = 'tiles-v1';          // タイルは版を上げても消さない
 const MAX_TILES = 3000;
@@ -9,10 +9,10 @@ const TILE_HOST = 'cyberjapandata.gsi.go.jp';
 const PRECACHE = [
   './', 'index.html', 'manifest.webmanifest',
   'css/style.css',
-  'js/i18n.js', 'js/icons.js', 'js/ui.js', 'js/map.js', 'js/hazards.js', 'js/filters.js', 'js/list.js',
+  'js/i18n.js', 'js/icons.js', 'js/ui.js', 'js/map.js', 'js/hazards.js', 'js/place.js', 'js/mypins.js', 'js/filters.js', 'js/list.js',
   'js/locate.js', 'js/offline.js', 'js/info.js', 'js/edit.js', 'js/categories.js', 'js/geoio.js', 'js/app.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
-  'data/hazards.geojson', 'data/categories.json',
+  'data/hazards.geojson', 'data/categories.json', 'data/config.json',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'
 ];
 

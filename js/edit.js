@@ -1,22 +1,24 @@
 // 編集モード（?edit=1）。編集内容はこのブラウザのlocalStorageにだけ自動保存する。
 // 公開データへの反映は「書き出し」→ GitHub上のファイル置換で行う。（編集画面は日本語のみ）
+// 危険個所と見どころの、両方を扱う。
 const LS_KEY = 'hazmap_edit_v1';
 
 const Edit = {
   on: EDIT,
   undo: [], redo: [],
   exportedAt: null, changedAt: null, saveOk: true,
-  placing: false, ghost: null, form: null, last: null
+  form: null, last: { hazard: null, spot: null }
 };
+Object.defineProperty(Edit, 'placing', { get() { return Place.on && Place.owner === 'edit'; } });
 
 function nowISO() { return new Date().toISOString(); }
 function today() {
   const d = new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-function newId() {
+function newId(prefix) {
   let id;
-  do { id = 'h' + Date.now().toString(36) + Math.floor(Math.random() * 36).toString(36); }
+  do { id = (prefix || 'h') + Date.now().toString(36) + Math.floor(Math.random() * 36).toString(36); }
   while (hazardData.features.some(f => f.properties.id === id));
   return id;
 }
@@ -36,7 +38,7 @@ function loadSaved() {
 function persist() {
   if (!EDIT) return;
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify({ hazards: hazardData, cats: CATS, savedAt: nowISO(), changedAt: Edit.changedAt, exportedAt: Edit.exportedAt }));
+    localStorage.setItem(LS_KEY, JSON.stringify({ ver: 2, hazards: hazardData, cats: CATS, savedAt: nowISO(), changedAt: Edit.changedAt, exportedAt: Edit.exportedAt }));
     Edit.saveOk = true;
   } catch (e) { Edit.saveOk = false; }
 }
@@ -70,45 +72,20 @@ Edit.doRedo = function () {
   Edit.changedAt = nowISO(); persist(); afterChange(); toast('やり直しました');
 };
 
-// ---------- ピンを置く（場所の指定） ----------
-function showPlaceBanner(on) {
-  const b = $('#place-banner');
-  b.hidden = !on;
-  if (!on) return;
-  const touch = !hoverCapable();
-  b.innerHTML = '<span class="pb-ic">' + ic('pin', 18) + '</span><span class="pb-t"><b>' + (touch ? '地図をタップして場所を指定' : '地図をクリックして場所を指定') +
-    '</b><small>置いたあとも、ドラッグで位置を直せます</small></span>' +
-    '<button type="button" class="btn btn-sm" id="pb-center">中央に置く</button><button type="button" class="btn btn-sm btn-ghost" id="pb-cancel">キャンセル</button>';
-  $('#pb-center').onclick = () => Edit.dropAt(map.getCenter());
-  $('#pb-cancel').onclick = () => Edit.cancelPlacing();
-}
-
-Edit.startPlacing = async function () {
-  if (Edit.placing) return Edit.cancelPlacing();
-  if (Panel.current && !Panel.current.noClose) { if (!(await Panel.requestClose())) return; }
-  Edit.placing = true;
-  document.body.classList.add('placing');
-  $('#map').classList.add('placing');
-  showPlaceBanner(true);
-  if (hoverCapable()) {
-    const last = Edit.last || {};
-    Edit.ghost = L.marker(map.getCenter(), {
-      icon: pinIcon({ category: last.category || (CATS.categories[0] || {}).id, severity: last.severity || 1 }, { ghost: true, badge: false }),
-      interactive: false, keyboard: false, zIndexOffset: 900, opacity: 0
-    }).addTo(map);
-  }
-  if (Panel.isOpen('edit-home')) Panel.refresh();
+// ---------- ピンを置く（場所の指定）----------
+Edit.startPlacing = function (kind) {
+  if (Edit.placing) return Place.cancel();
+  kind = kind || 'hazard';
+  const last = Edit.last[kind] || {}, cats = catsOfKind(kind);
+  const cat = cats.some(c => c.id === last.category) ? last.category : (cats[0] || {}).id;
+  return Place.start({
+    owner: 'edit', ghostProps: { category: cat, severity: last.severity || 1 },
+    text: { title: hoverCapable() ? '地図をクリックして場所を指定' : '地図をタップして場所を指定', sub: '置いたあとも、ドラッグで位置を直せます', center: '中央に置く', cancel: 'キャンセル' },
+    onDrop: ll => Edit.openForm(null, ll, kind)
+  });
 };
-Edit.cancelPlacing = function () {
-  if (!Edit.placing) return;
-  Edit.placing = false;
-  document.body.classList.remove('placing');
-  $('#map').classList.remove('placing');
-  showPlaceBanner(false);
-  if (Edit.ghost) { Edit.ghost.remove(); Edit.ghost = null; }
-  if (Panel.isOpen('edit-home')) Panel.refresh();
-};
-Edit.dropAt = function (ll) { Edit.cancelPlacing(); Edit.openForm(null, ll); };
+Edit.cancelPlacing = function () { if (Edit.placing) Place.cancel(); };
+Edit.dropAt = function (ll) { Place.drop(ll); };
 Edit.pinClicked = function (f) { Edit.cancelPlacing(); Edit.openForm(f); };
 Edit.movePin = function (f, coords) {
   Edit.mutate(() => { f.geometry.coordinates = coords; f.properties.updated_at = today(); });
@@ -126,21 +103,26 @@ function previewForm() {
   if (form.isNew) { if (form.marker) form.marker.setIcon(pinIcon(form.w, { draft: true })); }
   else refreshMarker(form.f.properties.id, form.w);
 }
+function firstCat(kind) {
+  const cats = catsOfKind(kind), last = Edit.last[kind];
+  return last && cats.some(c => c.id === last.category) ? last.category : (cats[0] || {}).id || '';
+}
 
-Edit.openForm = async function (f, ll) {
+Edit.openForm = async function (f, ll, kind) {
   if (Edit.form) {
     if (f && Edit.form.f === f) return;
     if (!(await Panel.requestClose())) return;
   }
   const isNew = !f;
-  const last = Edit.last || {};
+  kind = isNew ? (kind || 'hazard') : kindOf(f.properties);
+  const lastH = Edit.last.hazard || {};
   const w = isNew
-    ? { dummy: false, category: last.category || (CATS.categories[0] || {}).id || '', severity: last.severity || (CATS.severities[0] || {}).level || 1,
-        name_ja: '', name_en: '', desc_ja: '', desc_en: '', action_ja: '', action_en: '', photo: '', warn_radius_m: 0 }
+    ? { dummy: false, category: firstCat(kind), name_ja: '', name_en: '', desc_ja: '', desc_en: '', action_ja: '', action_en: '', photo: '' }
     : JSON.parse(JSON.stringify(f.properties));
-  if (isNew) w.warn_radius_m = sevOf(w.severity).warn_radius_m || 0;
+  if (isNew && kind === 'hazard') { w.severity = lastH.severity || (CATS.severities[0] || {}).level || 1; w.warn_radius_m = sevOf(w.severity).warn_radius_m || 0; }
+  if (isNew && kind === 'spot') w.author = '';
   const coords = isNew ? [+ll.lng.toFixed(6), +ll.lat.toFixed(6)] : f.geometry.coordinates.slice();
-  const form = { f: f || null, w, coords, isNew, dirty: false, marker: null, tab: 'ja', warnTouched: !isNew };
+  const form = { f: f || null, w, coords, isNew, kind, dirty: false, marker: null, tab: 'ja', warnTouched: !isNew };
   Edit.form = form;
 
   if (isNew) {
@@ -157,7 +139,7 @@ Edit.openForm = async function (f, ll) {
   }
 
   Panel.open({
-    id: 'form', title: isNew ? '新しい危険個所' : '危険個所を編集', icon: 'pin', modal: false,
+    id: 'form', title: (isNew ? '新しい' : '') + (kind === 'spot' ? '見どころ' : '危険個所') + (isNew ? '' : 'を編集'), icon: 'pin', modal: false,
     render: renderForm,
     canClose: async () => !Edit.form || !Edit.form.dirty || await confirmBox('入力内容を破棄しますか？', '保存していない変更は失われます。', '破棄する', true, '編集を続ける'),
     onClose() {
@@ -172,14 +154,28 @@ Edit.openForm = async function (f, ll) {
   if (isNew && hoverCapable()) setTimeout(() => { const i = $('#panel [data-k="name_ja"]'); if (i) i.focus(); }, 380);
 };
 
+function switchKind(kind) {                    // フォームの途中で、危険個所／見どころを切り替える
+  const form = Edit.form;
+  if (!form || form.kind === kind) return;
+  form.kind = kind; form.dirty = true;
+  const w = form.w;
+  if (!catsOfKind(kind).some(c => c.id === w.category)) w.category = firstCat(kind);
+  if (kind === 'hazard') {
+    w.severity = w.severity || (Edit.last.hazard && Edit.last.hazard.severity) || (CATS.severities[0] || {}).level || 1;
+    w.warn_radius_m = sevOf(w.severity).warn_radius_m || 0; form.warnTouched = false;
+  }
+  previewForm();
+  Panel.refresh();
+}
+
 function renderForm(body, foot) {
-  const form = Edit.form, w = form.w;
-  const catChips = CATS.categories.map(c => {
+  const form = Edit.form, w = form.w, spot = form.kind === 'spot';
+  const catChips = catsOfKind(form.kind).map(c => {
     const col = safeColor(c.color);
     return '<button type="button" class="pick" data-cat="' + esc(c.id) + '" role="radio" aria-checked="' + (c.id === w.category) + '" style="--cc:' + col + ';--ct:' + textOn(col) + '">' +
       '<span class="pick-ic">' + ic(GLYPHS[c.icon] ? c.icon : 'alert', 15) + '</span>' + esc(c.ja) + '</button>';
   }).join('');
-  const sevCards = CATS.severities.map(s => {
+  const sevCards = spot ? '' : CATS.severities.map(s => {
     const col = safeColor(s.color, '#111827');
     return '<button type="button" class="sevcard" data-sev="' + esc(s.level) + '" role="radio" aria-checked="' + (Number(s.level) === Number(w.severity)) + '" style="--sc:' + col + ';--st:' + textOn(col) + '">' +
       '<span class="sevcard-shape">' + sevShapeSvg(s.level, 20) + '</span><b>' + esc(s.mark) + '</b><span>' + esc(s.ja) + '</span></button>';
@@ -187,23 +183,29 @@ function renderForm(body, foot) {
   const fld = (k, label, ph, ta) => '<label class="fld"><span>' + label + '</span>' + (ta
     ? '<textarea class="input textarea" data-k="' + k + '" rows="3" placeholder="' + esc(ph) + '">' + esc(w[k]) + '</textarea>'
     : '<input class="input" data-k="' + k + '" value="' + esc(w[k]) + '" placeholder="' + esc(ph) + '" autocomplete="off">') + '</label>';
+  const L1 = spot ? 'おすすめポイント' : '説明', L2 = spot ? 'ヒント・楽しみ方' : '対処法';
+  const E1 = spot ? 'Why it\'s special' : 'Description', E2 = spot ? 'Tips' : 'What to do';
+  const ph = spot
+    ? { nj: '例：朝日がきれいな岬', dj: '例：朝日が海から昇るのが見えます。', aj: '例：日の出の少し前に着くと、ゆっくり楽しめます。', ne: 'e.g. Sunrise cape', de: 'e.g. You can watch the sun rise over the sea.', ae: 'e.g. Arrive a little before sunrise.' }
+    : { nj: '例：崖下の通路', dj: '例：雨のあとは、足場が滑りやすくなることがあります。', aj: '例：手すりを使い、ゆっくり歩いてください。', ne: 'e.g. Path below the cliff', de: 'e.g. The steps can become slippery after rain.', ae: 'e.g. Use the handrail and walk slowly.' };
 
   body.innerHTML =
+    '<div class="seg seg-md" id="f-kind" role="group"><button type="button" data-v="hazard" aria-pressed="' + !spot + '">' + ic('alert', 15) + '危険個所</button>' +
+    '<button type="button" data-v="spot" aria-pressed="' + spot + '">' + ic('star', 15) + '見どころ</button></div>' +
     '<div class="loc-card"><span class="loc-ic">' + ic('pin', 18) + '</span><div><small>位置</small><b class="mono" id="f-coord"></b></div>' +
     '<span class="loc-hint">' + ic('tap', 14) + 'ドラッグで微調整</span></div>' +
     '<div class="fld-label">① 種別</div><div class="picks" role="radiogroup" id="f-cats">' + catChips + '</div>' +
-    '<div class="fld-label">② 危険度</div><div class="sevcards" role="radiogroup" id="f-sevs">' + sevCards + '</div>' +
-    '<div class="fld-label">③ 内容 <small>日本語・英語の両方を入力します</small></div>' +
+    (spot ? '' : '<div class="fld-label">② 危険度</div><div class="sevcards" role="radiogroup" id="f-sevs">' + sevCards + '</div>') +
+    '<div class="fld-label">' + (spot ? '② ' : '③ ') + '内容 <small>日本語・英語の両方を入力します</small></div>' +
     '<div class="tabs" role="tablist"><button type="button" role="tab" data-tab="ja" aria-selected="true">日本語<i class="miss" data-miss="ja" hidden></i></button>' +
     '<button type="button" role="tab" data-tab="en" aria-selected="false">English<i class="miss" data-miss="en" hidden></i></button></div>' +
-    '<div class="pane" data-pane="ja">' + fld('name_ja', '名称', '例：崖下の通路') + fld('desc_ja', '説明', '例：雨のあとは、足場が滑りやすくなることがあります。', true) +
-    '<p class="hint">「〜することがあります」のように、断定しない表現で書きます。</p>' + fld('action_ja', '対処法', '例：手すりを使い、ゆっくり歩いてください。', true) + '</div>' +
-    '<div class="pane" data-pane="en" hidden>' + fld('name_en', 'Name', 'e.g. Path below the cliff') + fld('desc_en', 'Description', 'e.g. The steps can become slippery after rain.', true) +
-    fld('action_en', 'What to do', 'e.g. Use the handrail and walk slowly.', true) + '</div>' +
+    '<div class="pane" data-pane="ja">' + fld('name_ja', '名称', ph.nj) + fld('desc_ja', L1, ph.dj, true) +
+    (spot ? '' : '<p class="hint">「〜することがあります」のように、断定しない表現で書きます。</p>') + fld('action_ja', L2, ph.aj, true) + '</div>' +
+    '<div class="pane" data-pane="en" hidden>' + fld('name_en', 'Name', ph.ne) + fld('desc_en', E1, ph.de, true) + fld('action_en', E2, ph.ae, true) + '</div>' +
     '<label class="switch-row"><span><b>サンプル（ダミー）</b><small>画面に「サンプル」と表示します。実データではオフにします。</small></span>' +
     '<input type="checkbox" class="switch" data-k="dummy"' + (w.dummy ? ' checked' : '') + '></label>' +
     '<details class="adv"><summary>詳細設定</summary>' + fld('photo', '写真のファイルパス（任意）', '例：photos/h001.jpg') +
-    '<label class="fld"><span>警告半径（m）<small>第2段階の接近アラート用</small></span><input class="input" type="number" min="0" data-k="warn_radius_m" value="' + esc(w.warn_radius_m) + '"></label></details>' +
+    (spot ? fld('author', '投稿者名（任意）', '例：山田さん') : '<label class="fld"><span>警告半径（m）<small>第2段階の接近アラート用</small></span><input class="input" type="number" min="0" data-k="warn_radius_m" value="' + esc(w.warn_radius_m) + '"></label>') + '</details>' +
     '<p class="form-err" id="f-err" role="alert" hidden></p>';
 
   foot.innerHTML = (form.isNew ? '' : '<button type="button" class="btn btn-md btn-danger-ghost" id="f-del">' + ic('trash', 16) + '削除</button>') +
@@ -222,7 +224,9 @@ function renderForm(body, foot) {
     $$('.tabs [data-tab]', body).forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
     $$('.pane', body).forEach(p => { p.hidden = p.dataset.pane !== tab; });
   };
+  showTab(form.tab);
   $$('.tabs [data-tab]', body).forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  $$('#f-kind button', body).forEach(b => b.addEventListener('click', () => switchKind(b.dataset.v)));
 
   body.addEventListener('input', e => {
     const k = e.target.dataset && e.target.dataset.k;
@@ -242,7 +246,7 @@ function renderForm(body, foot) {
   $$('.sevcard', body).forEach(b => b.addEventListener('click', () => {
     w.severity = Number(b.dataset.sev); markDirty();
     $$('.sevcard', body).forEach(x => x.setAttribute('aria-checked', String(x === b)));
-    if (!form.warnTouched) { w.warn_radius_m = sevOf(w.severity).warn_radius_m || 0; $('[data-k="warn_radius_m"]', body).value = w.warn_radius_m; }
+    if (!form.warnTouched) { w.warn_radius_m = sevOf(w.severity).warn_radius_m || 0; const wr = $('[data-k="warn_radius_m"]', body); if (wr) wr.value = w.warn_radius_m; }
     previewForm();
   }));
   body.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveForm(); });
@@ -256,8 +260,8 @@ function renderForm(body, foot) {
 function saveForm() {
   const form = Edit.form;
   if (!form) return;
-  const w = form.w;
-  ['name_ja', 'name_en', 'desc_ja', 'desc_en', 'action_ja', 'action_en', 'photo'].forEach(k => { w[k] = (w[k] || '').trim(); });
+  const w = form.w, spot = form.kind === 'spot';
+  ['name_ja', 'name_en', 'desc_ja', 'desc_en', 'action_ja', 'action_en', 'photo', 'author'].forEach(k => { if (w[k] != null) w[k] = String(w[k]).trim(); });
   if (!w.name_ja && !w.name_en) {
     const err = $('#f-err');
     err.textContent = '名称を入力してください（日本語または English）。';
@@ -266,23 +270,24 @@ function saveForm() {
     const i = $('#panel [data-k="name_ja"]'); if (i) i.focus();
     return;
   }
-  w.severity = Number(w.severity) || 1;
-  w.warn_radius_m = Math.max(0, Number(w.warn_radius_m) || 0);
-  const wasNew = form.isNew;
+  if (spot) { delete w.severity; delete w.warn_radius_m; if (!w.author) delete w.author; }
+  else { w.severity = Number(w.severity) || 1; w.warn_radius_m = Math.max(0, Number(w.warn_radius_m) || 0); delete w.author; }
+  const wasNew = form.isNew, kind = form.kind;
   const enMissing = !w.name_en || (w.desc_ja && !w.desc_en) || (w.action_ja && !w.action_en);
   Edit.mutate(() => {
     if (wasNew) {
       hazardData.features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: form.coords },
-        properties: Object.assign({}, w, { id: newId(), updated_at: today() }) });
+        properties: Object.assign({}, w, { id: newId(spot ? 's' : 'h'), updated_at: today() }) });
     } else {
-      Object.assign(form.f.properties, w, { updated_at: today() });
+      form.f.properties = Object.assign({}, w, { updated_at: today() });
       form.f.geometry.coordinates = form.coords;
     }
   });
-  Edit.last = { category: w.category, severity: w.severity };
+  Edit.last[kind] = { category: w.category, severity: w.severity };
   form.dirty = false;
   Panel.close();
-  toast(wasNew ? 'ピンを追加しました' : '保存しました', wasNew ? { action: { label: '続けて追加', fn: Edit.startPlacing } } : {});
+  toast(wasNew ? (spot ? '見どころを追加しました' : '危険個所を追加しました') : '保存しました',
+    wasNew ? { action: { label: '続けて追加', fn: () => Edit.startPlacing(kind) } } : {});
   if (enMissing) setTimeout(() => toast('英語の入力が空欄です。あとで追加できます。', { tone: 'warn', ms: 5000 }), 300);
 }
 
@@ -299,6 +304,70 @@ async function deleteFromForm() {
   toast('ピンを削除しました', { action: { label: '元に戻す', fn: Edit.doUndo } });
 }
 
+// ---------- 利用者の「見どころの提案」を取り込む ----------
+function parseSubmissions(text) {
+  const out = [];
+  const grab = o => {
+    const feats = o && o.type === 'FeatureCollection' ? o.features : (o && o.type === 'Feature' ? [o] : []);
+    feats.forEach(f => { if (validPoint(f)) out.push(f); });
+  };
+  let found = false;
+  String(text || '').split('\n').forEach(line => {          // メッセージの中の「HAZMAP1:{...}」の行を探す
+    const i = line.indexOf('HAZMAP1:');
+    if (i >= 0) { try { grab(JSON.parse(line.slice(i + 8).trim())); found = true; } catch (e) {} }
+  });
+  if (!found) { try { grab(JSON.parse(String(text || '').trim())); } catch (e) {} }
+  return out;
+}
+
+Edit.openImport = function () {
+  let parsed = [];
+  Panel.open({
+    id: 'import', title: '利用者の提案を取り込む', icon: 'send', modal: true,
+    render(body, foot) {
+      body.innerHTML =
+        '<p class="muted small">利用者から届いた「見どころの提案」のメッセージを、そのまま貼り付けてください（<b>HAZMAP1:</b> で始まる行を使います）。ファイルでも取り込めます。</p>' +
+        '<textarea class="input textarea" id="im-text" rows="7" placeholder="ここに貼り付け"></textarea>' +
+        '<div class="btn-row"><button type="button" class="btn btn-sm" id="im-file">' + ic('upload', 15) + 'ファイルを選ぶ</button></div>' +
+        '<div id="im-preview"></div>';
+      foot.innerHTML = '<button type="button" class="btn btn-md" id="im-cancel">キャンセル</button><button type="button" class="btn btn-md btn-primary grow" id="im-ok" disabled>取り込む</button>';
+      const update = () => {
+        parsed = parseSubmissions($('#im-text', body).value);
+        $('#im-ok', foot).disabled = !parsed.length;
+        $('#im-ok', foot).textContent = parsed.length ? parsed.length + ' 件を取り込む' : '取り込む';
+        $('#im-preview', body).innerHTML = parsed.length
+          ? '<ul class="im-list">' + parsed.map(f => '<li><b>' + esc(f.properties.name_ja || f.properties.name_en || '（名称なし）') + '</b><small>' + esc(f.geometry.coordinates[1].toFixed(5) + ', ' + f.geometry.coordinates[0].toFixed(5)) + (f.properties.author ? ' · ' + esc(f.properties.author) : '') + '</small></li>').join('') + '</ul>'
+          : ($('#im-text', body).value.trim() ? '<p class="form-err">取り込めるデータが見つかりません。</p>' : '');
+      };
+      $('#im-text', body).addEventListener('input', update);
+      $('#im-file', body).onclick = () => {
+        const inp = document.createElement('input');
+        inp.type = 'file'; inp.accept = '.geojson,.json,.txt,application/json,text/plain';
+        inp.onchange = async () => { if (inp.files[0]) { $('#im-text', body).value = await inp.files[0].text(); update(); } };
+        inp.click();
+      };
+      $('#im-cancel', foot).onclick = () => Panel.requestClose();
+      $('#im-ok', foot).onclick = () => {
+        const spotCats = catsOfKind('spot');
+        if (!parsed.length || !spotCats.length) return;
+        const n = parsed.length;
+        Edit.mutate(() => {
+          parsed.forEach(f => {
+            const p = Object.assign({}, f.properties);
+            ['mine', 'dummy', 'severity', 'warn_radius_m', 'lang'].forEach(k => delete p[k]);
+            if (!spotCats.some(c => c.id === p.category)) p.category = spotCats[0].id;
+            p.id = newId('s'); p.source = 'visitor'; p.dummy = false; p.updated_at = today();
+            p.name_ja = p.name_ja || ''; p.name_en = p.name_en || ''; p.desc_ja = p.desc_ja || ''; p.desc_en = p.desc_en || '';
+            hazardData.features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: f.geometry.coordinates.slice(0, 2) }, properties: p });
+          });
+        });
+        Panel.close();
+        toast(n + ' 件を取り込みました。内容を確認し、必要なら英語などを追加してください。', { ms: 8000 });
+      };
+    }
+  });
+};
+
 // ---------- 編集メニュー ----------
 Edit.openHome = function () {
   Panel.open({ id: 'edit-home', title: '編集メニュー', icon: 'edit', noClose: isWide(), modal: true, focus: false, render: renderHome });
@@ -306,18 +375,22 @@ Edit.openHome = function () {
 
 function renderHome(body) {
   const n = hazardData.features.length;
+  const nH = hazardData.features.filter(f => kindOf(f.properties) === 'hazard').length, nS = n - nH;
   const un = hasUnexported();
   const fs = sortedHazards();
+  const placing = Edit.placing;
   body.innerHTML =
     '<div class="e-status"><span class="pill ' + (un ? 'pill-warn' : 'pill-ok') + '">' + (un ? '未書き出しの変更あり' : Edit.changedAt ? '書き出し済み' : '公開中のデータと同じ') +
-    '</span><span class="muted">ピン ' + n + ' 件</span></div>' +
+    '</span><span class="muted">危険個所 ' + nH + ' ・ 見どころ ' + nS + '</span></div>' +
     (Edit.saveOk ? '' : '<div class="note note-warn">このブラウザに自動保存できません。こまめに「書き出し」してください。</div>') +
-    '<button type="button" class="btn btn-lg btn-primary btn-block' + (Edit.placing ? ' is-active' : '') + '" id="h-add">' +
-    (Edit.placing ? ic('x', 20) + 'キャンセル（場所を指定中）' : ic('plus', 20) + '新しいピンを追加') + '</button>' +
+    (placing
+      ? '<button type="button" class="btn btn-lg btn-primary btn-block is-active" id="h-cancel">' + ic('x', 20) + 'キャンセル（場所を指定中）</button>'
+      : '<div class="add-btns"><button type="button" class="btn btn-lg btn-add-hazard" id="h-add-h">' + ic('plus', 18) + '危険個所</button>' +
+        '<button type="button" class="btn btn-lg btn-add-spot" id="h-add-s">' + ic('plus', 18) + '見どころ</button></div>') +
     '<ol class="steps steps-mini">' +
-    '<li><span>1</span><p>「新しいピンを追加」を押す</p></li>' +
+    '<li><span>1</span><p>「危険個所」または「見どころ」の追加ボタンを押す</p></li>' +
     '<li><span>2</span><p>地図をクリック（スマホはタップ）して場所を指定</p></li>' +
-    '<li><span>3</span><p>種別・危険度・内容を入力して「保存」</p></li>' +
+    '<li><span>3</span><p>種別・内容を入力して「保存」</p></li>' +
     '<li><span>4</span><p>最後に「書き出し」して、GitHubに上書き</p></li></ol>' +
     '<div class="btn-row"><button type="button" class="btn btn-sm" id="h-undo"' + (Edit.undo.length ? '' : ' disabled') + '>' + ic('undo', 15) + '元に戻す</button>' +
     '<button type="button" class="btn btn-sm" id="h-redo"' + (Edit.redo.length ? '' : ' disabled') + '>' + ic('redo', 15) + 'やり直す</button></div>' +
@@ -325,6 +398,7 @@ function renderHome(body) {
     '<button type="button" class="btn btn-md btn-accent" id="h-export">' + ic('download', 16) + '書き出し</button>' +
     '<button type="button" class="btn btn-md" id="h-import">' + ic('upload', 16) + '読み込み</button>' +
     '<button type="button" class="btn btn-md" id="h-csv">' + ic('doc', 16) + 'CSV</button></div>' +
+    '<button type="button" class="btn btn-md btn-block" id="h-subs">' + ic('send', 16) + '利用者の提案を取り込む</button>' +
     '<p class="muted small">「書き出し」の2ファイル（hazards.geojson・categories.json）を、GitHub の data フォルダに上書きアップロードすると、公開版に反映されます。</p>' +
     '<h3 class="sec">設定</h3>' +
     '<button type="button" class="btn btn-md btn-block" id="h-cats">' + ic('tag', 16) + '種別・危険度の編集</button>' +
@@ -333,18 +407,22 @@ function renderHome(body) {
     '<div class="rows">' + fs.map(hazardRowHTML).join('') + '</div>' +
     '<p class="note">編集画面は本物の認証ではありません。URLを知っている人は誰でも開けますが、公開版は書き換わりません。編集内容は、このブラウザの中にだけ保存されます。</p>';
 
-  $('#h-add', body).onclick = () => Edit.startPlacing();
-  $('#h-undo', body).onclick = () => Edit.doUndo();
-  $('#h-redo', body).onclick = () => Edit.doRedo();
-  $('#h-export', body).onclick = exportAll;
-  $('#h-import', body).onclick = importFiles;
-  $('#h-csv', body).onclick = exportCSV;
-  $('#h-cats', body).onclick = openCategoryEditor;
-  $('#h-reset', body).onclick = async () => {
+  const on = (id, fn) => { const el = $(id, body); if (el) el.onclick = fn; };
+  on('#h-add-h', () => Edit.startPlacing('hazard'));
+  on('#h-add-s', () => Edit.startPlacing('spot'));
+  on('#h-cancel', () => Place.cancel());
+  on('#h-undo', () => Edit.doUndo());
+  on('#h-redo', () => Edit.doRedo());
+  on('#h-export', exportAll);
+  on('#h-import', importFiles);
+  on('#h-csv', exportCSV);
+  on('#h-subs', () => Edit.openImport());
+  on('#h-cats', openCategoryEditor);
+  on('#h-reset', async () => {
     if (!(await confirmBox('編集内容を破棄しますか？', 'このブラウザに保存した編集内容を消して、公開中のデータに戻します。先に「書き出し」で保存しておくことをおすすめします。', '破棄する', true))) return;
     try { localStorage.removeItem(LS_KEY); } catch (e) {}
     location.reload();
-  };
+  });
   wireRows(body, f => Edit.pinClicked(f));
 }
 
@@ -352,9 +430,6 @@ function renderHome(body) {
 function initEdit() {
   if (!EDIT) return;
   $('#pill-edit').hidden = false;
-  map.on('click', e => { if (Edit.placing) Edit.dropAt(e.latlng); });
-  map.on('mousemove', e => { if (Edit.ghost) { Edit.ghost.setLatLng(e.latlng); Edit.ghost.setOpacity(1); } });
-  map.on('mouseout', () => { if (Edit.ghost) Edit.ghost.setOpacity(0); });
   Panel.onIdle = () => { if (isWide()) Edit.openHome(); };
   mqWide.addEventListener('change', () => {
     document.body.classList.toggle('edit-wide', isWide());
