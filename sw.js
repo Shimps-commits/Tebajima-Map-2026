@@ -1,6 +1,6 @@
 // Service Worker：アプリ本体とデータを保存し、閲覧した地図タイルを端末内に残す。
 // ファイルを更新して公開したら、VERSION を上げると端末側が入れ替わる。
-const VERSION = 'v1';
+const VERSION = 'v2';
 const APP_CACHE = 'app-' + VERSION;
 const TILE_CACHE = 'tiles-v1';          // タイルは版を上げても消さない
 const MAX_TILES = 3000;
@@ -8,14 +8,12 @@ const TILE_HOST = 'cyberjapandata.gsi.go.jp';
 
 const PRECACHE = [
   './', 'index.html', 'manifest.webmanifest',
-  'css/style.css', 'css/controls.css', 'css/edit.css', 'css/list.css',
-  'js/i18n.js', 'js/map.js', 'js/hazards.js', 'js/filters.js', 'js/edit.js', 'js/categories.js',
-  'js/geoio.js', 'js/list.js', 'js/offline.js', 'js/app.js', 'js/locate.js',
+  'css/style.css',
+  'js/i18n.js', 'js/icons.js', 'js/ui.js', 'js/map.js', 'js/hazards.js', 'js/filters.js', 'js/list.js',
+  'js/locate.js', 'js/offline.js', 'js/info.js', 'js/edit.js', 'js/categories.js', 'js/geoio.js', 'js/app.js',
   'vendor/leaflet/leaflet.js', 'vendor/leaflet/leaflet.css',
-  'vendor/leaflet/images/marker-icon.png', 'vendor/leaflet/images/marker-icon-2x.png',
-  'vendor/leaflet/images/marker-shadow.png', 'vendor/leaflet/images/layers.png', 'vendor/leaflet/images/layers-2x.png',
   'data/hazards.geojson', 'data/categories.json',
-  'icons/icon-192.png', 'icons/icon-512.png'
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', e => {
@@ -43,7 +41,7 @@ async function networkFirst(req) {
   const cache = await caches.open(APP_CACHE);
   try {
     const res = await Promise.race([
-      fetch(req),
+      fetch(req, { cache: 'no-cache' }),      // 毎回サーバーに最新か確認する（新旧のファイルが混ざらないように）
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))
     ]);
     if (res.ok) cache.put(req, res.clone());

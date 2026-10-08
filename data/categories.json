@@ -1,12 +1,12 @@
 {
-  "_note": "たたき台。打合せでアプリ内から追加・変更する。warn_radius_m は第2段階の接近アラート用。",
+  "_note": "たたき台。打合せでアプリ内から追加・変更する。icon は、アプリ内のピクトグラム名（rock, wave, slip, paw, boat, sun, wind, drop, bolt, alert, ban）または絵文字。warn_radius_m は第2段階の接近アラート用。",
   "categories": [
-    { "id": "rockfall", "ja": "落石・崖", "en": "Falling rocks / cliffs", "color": "#b45309", "icon": "🪨" },
-    { "id": "current",  "ja": "潮流・波", "en": "Tidal currents / waves", "color": "#0369a1", "icon": "🌊" },
-    { "id": "footing",  "ja": "足場・滑りやすい場所", "en": "Slippery / unstable footing", "color": "#4d7c0f", "icon": "⚠" },
-    { "id": "wildlife", "ja": "生き物", "en": "Wildlife", "color": "#7e22ce", "icon": "🐍" },
-    { "id": "vessel",   "ja": "船舶・航路", "en": "Boats / shipping lane", "color": "#be123c", "icon": "⛴" },
-    { "id": "other",    "ja": "その他", "en": "Other", "color": "#374151", "icon": "❗" }
+    { "id": "rockfall", "ja": "落石・崖", "en": "Falling rocks / cliffs", "color": "#b45309", "icon": "rock" },
+    { "id": "current",  "ja": "潮流・波", "en": "Tidal currents / waves", "color": "#0369a1", "icon": "wave" },
+    { "id": "footing",  "ja": "足場・滑りやすい場所", "en": "Slippery / unstable footing", "color": "#4d7c0f", "icon": "slip" },
+    { "id": "wildlife", "ja": "生き物", "en": "Wildlife", "color": "#7e22ce", "icon": "paw" },
+    { "id": "vessel",   "ja": "船舶・航路", "en": "Boats / shipping lane", "color": "#be123c", "icon": "boat" },
+    { "id": "other",    "ja": "その他", "en": "Other", "color": "#374151", "icon": "alert" }
   ],
   "severities": [
     { "level": 1, "ja": "注意", "en": "Caution", "mark": "!", "color": "#facc15", "warn_radius_m": 20 },

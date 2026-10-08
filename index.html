@@ -1,52 +1,96 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" data-theme="auto" data-eff="light">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0b3d5c">
+<title>Hazard Map | 出羽島・牟岐大島</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Hazard Map">
-<title>Hazard Map | 出羽島・牟岐大島</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>
+// 描画前にテーマを決める（ちらつき防止）。設定が読めなくても動く。
+(function () {
+  try {
+    var p = localStorage.getItem('theme') || 'auto';
+    var d = p === 'dark' || (p === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = p;
+    document.documentElement.dataset.eff = d ? 'dark' : 'light';
+  } catch (e) {}
+})();
+</script>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/controls.css">
-<link rel="stylesheet" href="css/edit.css">
-<link rel="stylesheet" href="css/list.css">
 </head>
 <body>
-<header id="bar">
-  <h1 data-i18n="title">危険個所マップ</h1>
-  <div id="areas">
-    <button data-area="deba" data-i18n="deba">出羽島</button>
-    <button data-area="oshima" data-i18n="oshima">牟岐大島</button>
+
+<div id="map" role="application"></div>
+
+<header id="topbar" class="glass">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d8be0"/><stop offset="1" stop-color="#0a3d6b"/></linearGradient></defs>
+      <rect width="32" height="32" rx="9" fill="url(#lg)"/>
+      <path d="M16 6.5 26 24H6L16 6.5z" fill="#fbbf24" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M16 12.5v5.5M16 20.6v.01" stroke="#0b1220" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+    </svg>
+    <span class="brand-text"><b data-i18n="title">危険個所マップ</b><small data-i18n="subtitle">出羽島・牟岐大島</small></span>
   </div>
-  <button id="list-btn" data-i18n="list">一覧</button>
-  <button id="offline-btn" data-i18n="offline">オフライン</button>
-  <button id="filter-btn" data-i18n="filter">絞り込み</button>
-  <button id="lang-btn" data-i18n="lang">English</button>
+  <span class="spacer"></span>
+  <div id="lang-seg" class="seg seg-sm" role="group" aria-label="Language">
+    <button type="button" data-lang="ja">日本語</button>
+    <button type="button" data-lang="en">EN</button>
+  </div>
 </header>
-<p id="notice" data-i18n="notice"></p>
-<div id="map"></div>
-<div id="filter-panel" hidden></div>
-<section id="list-panel" hidden></section>
-<section id="offline-panel" hidden></section>
-<p id="loc-msg" role="status" hidden></p>
-<button id="locate-btn" data-i18n="locate">現在地</button>
-<section id="detail" hidden></section>
+
+<div id="row2">
+  <div id="areas" class="seg seg-lg glass" role="group" data-i18n-aria="areaLabel"></div>
+  <div id="status">
+    <span id="pill-edit" class="pill pill-edit" hidden>編集モード</span>
+    <span id="pill-sample" class="pill pill-sample" hidden data-i18n="sample">サンプル</span>
+    <span id="pill-net" class="pill pill-net" hidden></span>
+  </div>
+</div>
+<button id="strip" class="strip" type="button"></button>
+<div id="place-banner" class="glass" hidden></div>
+
+<div id="map-tools"></div>
+<div id="layers-pop" class="glass" hidden></div>
+<button id="btn-locate" class="glass" type="button"></button>
+<div id="loc-chip" class="glass" hidden></div>
+<nav id="dock" class="glass" aria-label="Main"></nav>
+
+<div id="backdrop" hidden></div>
+<aside id="panel" tabindex="-1" role="dialog" aria-labelledby="panel-title" hidden>
+  <div id="panel-grip" class="panel-grip"></div>
+  <div id="panel-head" class="panel-head">
+    <span id="panel-icon" class="panel-icon" hidden></span>
+    <div class="panel-titles"><h2 id="panel-title"></h2><p id="panel-sub" hidden></p></div>
+    <button id="panel-close" class="btn-icon" type="button" data-i18n-aria="close"></button>
+  </div>
+  <div id="panel-body" class="panel-body"></div>
+  <div id="panel-foot" class="panel-foot" hidden></div>
+</aside>
+<div id="toasts" aria-live="polite"></div>
+
 <script src="vendor/leaflet/leaflet.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/ui.js"></script>
 <script src="js/map.js"></script>
 <script src="js/hazards.js"></script>
 <script src="js/filters.js"></script>
+<script src="js/list.js"></script>
+<script src="js/locate.js"></script>
+<script src="js/offline.js"></script>
+<script src="js/info.js"></script>
 <script src="js/edit.js"></script>
 <script src="js/categories.js"></script>
 <script src="js/geoio.js"></script>
-<script src="js/list.js"></script>
-<script src="js/offline.js"></script>
 <script src="js/app.js"></script>
-<script src="js/locate.js"></script>
 </body>
 </html>

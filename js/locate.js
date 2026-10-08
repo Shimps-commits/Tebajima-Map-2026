@@ -1,42 +1,69 @@
-// 現在地表示。位置情報は端末内の表示にのみ使い、外部へ送信しない。
-let locWatchId = null, locMarker = null, locCircle = null, firstFix = true;
+// 現在地表示。位置情報は端末内の表示にだけ使い、外部へは送信しない。
+const Locate = {
+  state: 'off',            // off | searching | on | error
+  watchId: null, marker: null, circle: null, pos: null, acc: null, first: true, errKey: null
+};
 
-function showLocMsg(key) {
-  const el = document.getElementById('loc-msg');
-  el.textContent = t(key); el.dataset.key = key; el.hidden = false;
+function locateBtnHTML() { return ic('locate', 24); }
+
+function renderLocUI() {
+  const btn = $('#btn-locate'), chip = $('#loc-chip');
+  btn.classList.toggle('on', Locate.state === 'on');
+  btn.classList.toggle('searching', Locate.state === 'searching');
+  btn.setAttribute('aria-pressed', String(Locate.state === 'on'));
+  if (Locate.state === 'off') { chip.hidden = true; return; }
+  chip.hidden = false;
+  chip.className = 'glass' + (Locate.state === 'error' ? ' err' : '');
+  if (Locate.state === 'searching') {
+    chip.innerHTML = '<span class="spin"></span><span class="loc-t">' + esc(t('locating')) + '</span><button type="button" class="loc-x" aria-label="' + esc(t('locStop')) + '">' + ic('x', 16) + '</button>';
+  } else if (Locate.state === 'on') {
+    chip.innerHTML = '<span class="live"></span><span class="loc-t"><b>' + esc(t('located')) + '</b><small>' +
+      (Locate.acc != null ? esc(t('accuracy', { n: Math.round(Locate.acc) })) + ' · ' : '') + esc(t('localOnly')) +
+      '</small></span><button type="button" class="loc-stop">' + esc(t('locStop')) + '</button>';
+  } else {
+    chip.innerHTML = '<span class="loc-i">' + ic('alert', 18) + '</span><span class="loc-t">' + esc(t(Locate.errKey)) + '</span><button type="button" class="loc-x" aria-label="' + esc(t('close')) + '">' + ic('x', 16) + '</button>';
+  }
+  $$('.loc-x, .loc-stop', chip).forEach(b => b.addEventListener('click', stopLocate));
 }
-function hideLocMsg() { document.getElementById('loc-msg').hidden = true; }
 
 function stopLocate() {
-  if (locWatchId !== null) navigator.geolocation.clearWatch(locWatchId);
-  locWatchId = null;
-  if (locMarker) { locMarker.remove(); locMarker = null; }
-  if (locCircle) { locCircle.remove(); locCircle = null; }
-  document.getElementById('locate-btn').classList.remove('on');
-  hideLocMsg();
+  if (Locate.watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(Locate.watchId);
+  Locate.watchId = null;
+  if (Locate.marker) { Locate.marker.remove(); Locate.marker = null; }
+  if (Locate.circle) { Locate.circle.remove(); Locate.circle = null; }
+  Locate.state = 'off'; Locate.pos = null; Locate.acc = null; Locate.errKey = null;
+  renderLocUI(); updateDetailDistance();
+}
+
+function locFail(key) {
+  if (Locate.watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(Locate.watchId);
+  Locate.watchId = null;
+  if (Locate.marker) { Locate.marker.remove(); Locate.marker = null; }
+  if (Locate.circle) { Locate.circle.remove(); Locate.circle = null; }
+  Locate.state = 'error'; Locate.errKey = key; Locate.pos = null;
+  renderLocUI();
 }
 
 function startLocate() {
-  if (!('geolocation' in navigator)) return showLocMsg('locUnsupported');
-  if (!window.isSecureContext) return showLocMsg('locInsecure');
-  showLocMsg('locating');
-  firstFix = true;
-  document.getElementById('locate-btn').classList.add('on');
-  locWatchId = navigator.geolocation.watchPosition(pos => {
+  if (!('geolocation' in navigator)) return locFail('locUnsupported');
+  if (!window.isSecureContext) return locFail('locInsecure');
+  Locate.state = 'searching'; Locate.first = true; Locate.errKey = null;
+  renderLocUI();
+  Locate.watchId = navigator.geolocation.watchPosition(pos => {
     const ll = [pos.coords.latitude, pos.coords.longitude];
-    if (!locMarker) {
-      locMarker = L.circleMarker(ll, { radius: 9, color: '#fff', weight: 3, fillColor: '#1d4ed8', fillOpacity: 1 }).addTo(map);
-      locCircle = L.circle(ll, { radius: pos.coords.accuracy, color: '#1d4ed8', weight: 1, fillOpacity: .1 }).addTo(map);
-    } else { locMarker.setLatLng(ll); locCircle.setLatLng(ll).setRadius(pos.coords.accuracy); }
-    if (firstFix) { map.setView(ll, Math.max(map.getZoom(), 16)); firstFix = false; }
-    showLocMsg('located');
+    Locate.pos = ll; Locate.acc = pos.coords.accuracy; Locate.state = 'on';
+    if (!Locate.marker) {
+      Locate.marker = L.marker(ll, { icon: L.divIcon({ className: 'me-wrap', html: '<div class="me"><i></i></div>', iconSize: [24, 24], iconAnchor: [12, 12] }), interactive: false, keyboard: false, zIndexOffset: 500 }).addTo(map);
+      Locate.circle = L.circle(ll, { radius: pos.coords.accuracy, color: '#2563eb', weight: 1, fillColor: '#2563eb', fillOpacity: 0.1, interactive: false }).addTo(map);
+    } else { Locate.marker.setLatLng(ll); Locate.circle.setLatLng(ll).setRadius(pos.coords.accuracy); }
+    if (Locate.first) { Locate.first = false; focusLatLng(ll, Math.max(map.getZoom(), 16)); }
+    renderLocUI(); updateDetailDistance();
   }, err => {
-    const key = err.code === 1 ? 'locDenied' : err.code === 3 ? 'locTimeout' : 'locUnavailable';
-    stopLocate();
-    showLocMsg(key);
+    locFail(err.code === 1 ? 'locDenied' : err.code === 3 ? 'locTimeout' : 'locUnavailable');
   }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
 }
 
-document.getElementById('locate-btn').addEventListener('click', () => {
-  locWatchId === null ? startLocate() : stopLocate();
-});
+function onLocateButton() {
+  if (Locate.state === 'off' || Locate.state === 'error') startLocate();
+  else if (Locate.state === 'on' && Locate.pos) focusLatLng(Locate.pos, Math.max(map.getZoom(), 16));   // 現在地に戻る
+}
