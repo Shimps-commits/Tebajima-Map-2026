@@ -1,0 +1,28 @@
+/* 編集モード */
+#edit-bar { background: #fde68a; color: #111; padding: 6px 12px; border-bottom: 3px solid #92400e; }
+.edit-note { margin: 0 0 6px; font-size: 12px; line-height: 1.4; }
+.edit-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.edit-btns button, #modal button { min-height: 44px; padding: 0 12px; font-size: 15px; font-weight: 700; border: 2px solid #111; border-radius: 8px; background: #fff; color: #111; }
+button.primary { background: #0b3d5c !important; color: #fff !important; }
+button.danger { background: #fff; color: #b91c1c !important; border-color: #b91c1c !important; }
+#save-status { margin: 6px 0 0; font-size: 12px; color: #14532d; font-weight: 700; }
+#save-status.bad { color: #b91c1c; }
+#map.adding { cursor: crosshair; outline: 4px solid #0b3d5c; outline-offset: -4px; }
+
+#modal { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,.55); overflow: auto; padding: 12px; box-sizing: border-box; }
+#modal[hidden] { display: none; }
+.modal-box { max-width: 560px; margin: 0 auto; background: #fff; color: #111; border-radius: 12px; padding: 16px; }
+.modal-box h2 { margin: 0 0 8px; font-size: 20px; }
+.modal-box h3 { margin: 16px 0 4px; font-size: 15px; }
+.modal-box label { display: block; margin: 10px 0 0; font-size: 13px; font-weight: 700; color: #333; }
+.modal-box label.chk { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.modal-box input:not([type=checkbox]):not([type=color]), .modal-box select, .modal-box textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 4px; padding: 10px; font-size: 16px; border: 2px solid #555; border-radius: 8px; font-family: inherit; }
+.modal-box input[type=checkbox] { width: 24px; height: 24px; }
+.modal-box .coord, .modal-box .hint { font-size: 12px; color: #555; margin: 10px 0 0; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.crow { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+.crow input:not([type=color]) { margin-top: 0 !important; min-width: 0; flex: 1; }
+.crow input.w-icon { flex: 0 0 56px; text-align: center; }
+.crow input.w-num { flex: 0 0 72px; }
+.crow input[type=color] { flex: 0 0 48px; height: 44px; padding: 0; border: 2px solid #555; border-radius: 8px; background: #fff; }
+.crow button { flex: 0 0 44px; padding: 0 !important; }

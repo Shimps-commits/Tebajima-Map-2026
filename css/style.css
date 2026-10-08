@@ -1,0 +1,31 @@
+html, body { height: 100%; margin: 0; font-family: system-ui, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+body { display: flex; flex-direction: column; background: #fff; color: #111; }
+#bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #0b3d5c; color: #fff; flex-wrap: wrap; }
+#bar h1 { font-size: 18px; margin: 0; flex: 1; min-width: 120px; }
+#bar button { min-height: 44px; min-width: 64px; padding: 0 10px; font-size: 16px; font-weight: 700; border: 2px solid #fff; border-radius: 8px; background: transparent; color: #fff; }
+#areas { display: flex; gap: 6px; }
+#areas button.active { background: #fff; color: #0b3d5c; }
+#notice { margin: 0; padding: 6px 12px; background: #fff3bf; color: #111; font-size: 13px; line-height: 1.4; border-bottom: 2px solid #b45309; }
+#map { flex: 1; }
+
+.pin-wrap { background: none; border: 0; }
+.pin { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #fff;
+  border: 3px solid #fff; box-shadow: 0 0 0 2px #000; box-sizing: border-box; font-size: 20px; }
+.pin.sev1 { border-radius: 50%; }
+.pin.sev2 { border-radius: 8px; transform: rotate(45deg); }
+.pin.sev2 .pi, .pin.sev2 .pm { transform: rotate(-45deg); }
+.pin.sev3 { border-radius: 14px; outline: 3px dashed #000; outline-offset: 2px; }
+.pm { position: absolute; bottom: -10px; right: -10px; min-width: 22px; padding: 0 3px; border-radius: 10px; background: #000; color: #fff; font-size: 12px; text-align: center; line-height: 18px; }
+
+#detail { position: fixed; left: 0; right: 0; bottom: 0; max-height: 55vh; overflow: auto; z-index: 1000; background: #fff; color: #111;
+  padding: 16px; box-shadow: 0 -4px 16px rgba(0,0,0,.35); border-radius: 16px 16px 0 0; font-size: 16px; line-height: 1.5; }
+#detail[hidden] { display: none; }
+#detail h2 { margin: 0 40px 8px 0; font-size: 20px; }
+#detail h3 { margin: 12px 0 2px; font-size: 14px; color: #444; }
+#detail p { margin: 0; }
+#detail img { max-width: 100%; border-radius: 8px; margin-top: 8px; }
+#detail .close { position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; font-size: 20px; border: 2px solid #111; border-radius: 8px; background: #fff; }
+.tag { display: inline-block; padding: 4px 10px; margin-right: 6px; border-radius: 14px; color: #fff; font-size: 14px; font-weight: 700; }
+.sevtag { background: #000; }
+.badge-sample { display: inline-block; padding: 2px 8px; margin-bottom: 4px; background: #facc15; color: #000; font-weight: 800; border: 2px solid #000; border-radius: 4px; font-size: 13px; }
+.upd { margin-top: 12px; font-size: 12px; color: #555; }

@@ -1,0 +1,16 @@
+{
+  "_note": "たたき台。打合せでアプリ内から追加・変更する。warn_radius_m は第2段階の接近アラート用。",
+  "categories": [
+    { "id": "rockfall", "ja": "落石・崖", "en": "Falling rocks / cliffs", "color": "#b45309", "icon": "🪨" },
+    { "id": "current",  "ja": "潮流・波", "en": "Tidal currents / waves", "color": "#0369a1", "icon": "🌊" },
+    { "id": "footing",  "ja": "足場・滑りやすい場所", "en": "Slippery / unstable footing", "color": "#4d7c0f", "icon": "⚠" },
+    { "id": "wildlife", "ja": "生き物", "en": "Wildlife", "color": "#7e22ce", "icon": "🐍" },
+    { "id": "vessel",   "ja": "船舶・航路", "en": "Boats / shipping lane", "color": "#be123c", "icon": "⛴" },
+    { "id": "other",    "ja": "その他", "en": "Other", "color": "#374151", "icon": "❗" }
+  ],
+  "severities": [
+    { "level": 1, "ja": "注意", "en": "Caution", "mark": "!", "color": "#facc15", "warn_radius_m": 20 },
+    { "level": 2, "ja": "警戒", "en": "Warning", "mark": "!!", "color": "#f97316", "warn_radius_m": 40 },
+    { "level": 3, "ja": "危険", "en": "Danger", "mark": "!!!", "color": "#dc2626", "warn_radius_m": 80 }
+  ]
+}

@@ -1,0 +1,12 @@
+/* フィルター・現在地ボタン */
+#filter-panel { position: fixed; top: 110px; right: 8px; z-index: 1100; width: min(280px, calc(100vw - 16px)); max-height: 60vh; overflow: auto; background: #fff; color: #111; border: 2px solid #111; border-radius: 12px; padding: 8px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.35); }
+#filter-panel[hidden], #loc-msg[hidden] { display: none; }
+#filter-panel h3 { margin: 8px 0 2px; font-size: 14px; color: #444; }
+.frow { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 16px; }
+.frow input { width: 24px; height: 24px; }
+.dot { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; color: #fff; font-style: normal; margin-right: 6px; }
+.mk { display: inline-block; min-width: 36px; padding: 0 6px; margin-right: 6px; border-radius: 10px; background: #000; color: #fff; text-align: center; }
+#filter-all { width: 100%; min-height: 44px; margin: 8px 0; font-size: 16px; font-weight: 700; border: 2px solid #111; border-radius: 8px; background: #fff; }
+#locate-btn { position: fixed; right: 12px; bottom: 28px; z-index: 1050; min-width: 88px; min-height: 56px; padding: 0 14px; font-size: 16px; font-weight: 800; color: #fff; background: #1d4ed8; border: 3px solid #fff; border-radius: 28px; box-shadow: 0 0 0 2px #000, 0 4px 10px rgba(0,0,0,.4); }
+#locate-btn.on { background: #000; }
+#loc-msg { position: fixed; left: 8px; right: 8px; bottom: 96px; z-index: 1050; margin: 0; padding: 10px 12px; background: #111; color: #fff; border-radius: 8px; font-size: 14px; line-height: 1.4; }

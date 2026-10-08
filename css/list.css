@@ -1,0 +1,22 @@
+/* 一覧表・オフライン準備 */
+#offline-panel { position: fixed; inset: 0; z-index: 1500; overflow: auto; background: #fff; color: #111; padding: 12px; box-sizing: border-box; font-size: 16px; line-height: 1.5; }
+#offline-panel[hidden] { display: none; }
+.off-stat { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 12px 0; }
+.off-stat dt { font-weight: 700; } .off-stat dd { margin: 0; text-align: right; }
+.off-stat dd.ok { color: #166534; font-weight: 800; } .off-stat dd.ng { color: #b91c1c; font-weight: 800; }
+.off-note { padding: 8px 10px; background: #fff3bf; border: 2px solid #b45309; border-radius: 8px; font-size: 14px; }
+#offline-panel h3 { margin: 16px 0 4px; font-size: 15px; }
+#offline-panel li { margin: 6px 0; }
+#list-panel { position: fixed; inset: 0; z-index: 1500; overflow: auto; background: #fff; color: #111; padding: 12px; box-sizing: border-box; }
+#list-panel[hidden] { display: none; }
+.list-head { display: flex; align-items: center; gap: 8px; }
+.list-head h2 { flex: 1; margin: 0; font-size: 20px; }
+.list-head button { min-height: 44px; min-width: 44px; padding: 0 12px; font-size: 15px; font-weight: 700; border: 2px solid #111; border-radius: 8px; background: #fff; color: #111; }
+#list-panel .hint { margin: 6px 0 10px; font-size: 13px; color: #444; }
+#list-panel table { width: 100%; border-collapse: collapse; font-size: 16px; }
+#list-panel th { text-align: left; font-size: 13px; color: #444; border-bottom: 2px solid #111; padding: 6px 4px; }
+#list-panel td { padding: 10px 4px; border-bottom: 1px solid #999; vertical-align: middle; }
+#list-panel td:nth-child(1), #list-panel td:nth-child(2) { width: 84px; text-align: center; line-height: 1.6; }
+#list-panel td small { font-size: 11px; }
+#list-panel tbody tr { cursor: pointer; min-height: 44px; }
+#list-panel tbody tr:active, #list-panel tbody tr:focus { background: #e0f2fe; outline: none; }
