@@ -63,7 +63,11 @@ const STRINGS = {
     sendHeader: '【見どころの提案】出羽島・牟岐大島マップ', sendPlace: '場所', sendName: 'なまえ', sendNote: 'おすすめ', sendNick: 'ニックネーム',
     sendData: '以下は運営用のデータです（消さないでください）',
     mineSection: 'マイピン', mineCount: '{n} 件（この端末の中だけ）', mineSendAll: 'すべて運営に送る', mineExport: 'ファイルで保存',
-    mineClear: 'すべて削除', mineClearAsk: 'マイピンをすべて削除しますか？', mineNone: 'まだありません。下の「＋」から、見どころを追加できます。'
+    mineClear: 'すべて削除', mineClearAsk: 'マイピンをすべて削除しますか？', mineNone: 'まだありません。下の「＋」から、見どころを追加できます。',
+    sendNow: '送信する', sendMsgDirect: '運営に送ります。内容を確認したうえで、みんなの地図に載る場合があります。',
+    sendSending: '送信中…', sendOk: '送信しました。確認後、みんなの地図に載る場合があります', sendFail: '送信できませんでした。電波のある場所で、もう一度お試しください',
+    sentNote: '運営に送信済みです（確認後に、みんなの地図に載る場合があります）',
+    dataUpdated: 'データの更新：{d}', dataCached: '前回取得したデータを表示しています'
   },
   en: {
     title: 'Tebajima & Mugi-Oshima', subtitle: 'Hazards & spots', sample: 'SAMPLE',
@@ -127,7 +131,11 @@ const STRINGS = {
     sendHeader: '[Spot suggestion] Tebajima & Mugi-Oshima Map', sendPlace: 'Place', sendName: 'Name', sendNote: 'Why it\'s special', sendNick: 'Nickname',
     sendData: 'The data below is for the organizers (please do not delete it)',
     mineSection: 'My pins', mineCount: '{n} on this device only', mineSendAll: 'Send all to organizers', mineExport: 'Save as file',
-    mineClear: 'Delete all', mineClearAsk: 'Delete all of your pins?', mineNone: 'None yet. Tap "+" below to add a spot.'
+    mineClear: 'Delete all', mineClearAsk: 'Delete all of your pins?', mineNone: 'None yet. Tap "+" below to add a spot.',
+    sendNow: 'Send', sendMsgDirect: 'This will be sent to the organizers. After review, it may appear on the shared map.',
+    sendSending: 'Sending…', sendOk: 'Sent. After review, it may appear on the shared map.', sendFail: 'Could not send. Please try again where you have a signal.',
+    sentNote: 'Sent to the organizers (it may appear on the shared map after review)',
+    dataUpdated: 'Data updated: {d}', dataCached: 'Showing the data fetched last time'
   }
 };
 

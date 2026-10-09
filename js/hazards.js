@@ -212,7 +212,7 @@ function detailHTML(f) {
   const [lng, lat] = f.geometry.coordinates;
   const author = p.author ? '<p class="d-author">' + ic('user', 13) + esc(t('author', { n: p.author })) + '</p>' : '';
   const actions = isMine(f)
-    ? '<p class="d-mine-note">' + esc(t('mineNoteShort')) + '</p><div class="d-actions">' +
+    ? '<p class="d-mine-note">' + esc(t(p.sentAt ? 'sentNote' : 'mineNoteShort')) + '</p><div class="d-actions">' +
       '<button type="button" class="btn btn-sm" id="d-mine-edit">' + ic('edit', 15) + esc(t('btnEdit')) + '</button>' +
       '<button type="button" class="btn btn-sm btn-primary" id="d-mine-send">' + ic('send', 15) + esc(t('btnSend')) + '</button>' +
       '<button type="button" class="btn btn-sm btn-danger-ghost" id="d-mine-del">' + ic('trash', 15) + esc(t('btnDelete')) + '</button></div>'
@@ -274,22 +274,60 @@ function selectHazard(f) {
   else showDetail(f);
 }
 
+// データの読み込み。優先順：スプレッドシート（最新）→ 前回取得したシート → 同梱の hazards.geojson
 async function loadHazards() {
-  const [cats, data, cfg] = await Promise.all([
+  const [cats, fileData, cfg] = await Promise.all([
     fetch('data/categories.json').then(r => r.json()),
-    fetch('data/hazards.geojson').then(r => r.json()),
+    fetch('data/hazards.geojson').then(r => r.json()).catch(() => ({ type: 'FeatureCollection', features: [] })),
     fetch('data/config.json').then(r => (r.ok ? r.json() : {})).catch(() => ({}))
   ]);
   CONFIG = Object.assign(CONFIG, cfg);
-  CATS = migrateCats(cats); hazardData = data;
-  if (EDIT) {                         // 編集モードは、このブラウザに保存済みの編集内容を優先
-    const s = loadSaved();
-    if (s) {
-      CATS = migrateCats(s.cats); hazardData = s.hazards;
-      if (s.ver !== 2) mergeMissingCats(CATS, migrateCats(JSON.parse(JSON.stringify(cats))));   // 見どころ導入前の保存データに、新しい種別を1回だけ足す
+  CATS = migrateCats(cats);
+  hazardData = fileData;
+  Sheet.info = { source: 'file', at: null };
+
+  const url = CONFIG.sheetCsvUrl;
+  let cached = null;
+  if (url) {
+    cached = Sheet.readCache();
+    if (cached) {                                       // 前回取得したシートを、すぐに表示する
+      try { hazardData = Sheet.toCollection(cached.text); Sheet.info = { source: 'cache', at: cached.at }; } catch (e) { cached = null; }
+    } else {                                            // 初回は、シートを待つ（最大8秒）
+      try {
+        const text = await Sheet.fetchText(url);
+        hazardData = Sheet.toCollection(text); Sheet.writeCache(text);
+        Sheet.info = { source: 'sheet', at: new Date().toISOString() };
+      } catch (e) { console.warn('スプレッドシートを読み込めません。同梱のデータを使います。', e); }
+    }
+  }
+
+  let local = null;
+  if (EDIT) {                                           // 編集モードは、このブラウザに保存済みの編集内容を優先
+    local = loadSaved();
+    if (local) {
+      CATS = migrateCats(local.cats); hazardData = local.hazards;
+      if (local.ver !== 2) mergeMissingCats(CATS, migrateCats(JSON.parse(JSON.stringify(cats))));   // 見どころ導入前の保存データに、新しい種別を1回だけ足す
     }
   } else {
-    MyPins.load();                    // この端末の「マイピン」
+    MyPins.load();                                      // この端末の「マイピン」
   }
   renderHazards();
+
+  if (url && cached && !local) refreshFromSheet(url, cached.text);     // 背景で最新を取り直す
+}
+
+async function refreshFromSheet(url, oldText) {
+  try {
+    const text = await Sheet.fetchText(url);
+    Sheet.info = { source: 'sheet', at: new Date().toISOString() };
+    if (text !== oldText) {
+      const col = Sheet.toCollection(text);
+      Sheet.writeCache(text);
+      if (!Panel.isOpen('form') && !Panel.isOpen('mine-form')) {
+        hazardData = col;
+        renderHazards();
+        ['list', 'filter', 'info', 'edit-home'].forEach(id => { if (Panel.isOpen(id)) Panel.refresh(); });
+      }
+    } else if (Panel.isOpen('info')) Panel.refresh();
+  } catch (e) { console.warn('スプレッドシートを更新できません（前回の内容を表示しています）', e); }
 }

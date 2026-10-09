@@ -190,7 +190,7 @@ MyPins.clearAll = async function () {
 // ---- 運営に送る ----
 function mineClean(f) {                                      // 送るデータから、端末だけの印を外す
   const p = Object.assign({}, f.properties);
-  delete p.mine; delete p.dummy;
+  delete p.mine; delete p.dummy; delete p.sentAt;
   return { type: 'Feature', geometry: f.geometry, properties: p };
 }
 MyPins.buildMessage = function (feats) {
@@ -211,13 +211,33 @@ MyPins.buildMessage = function (feats) {
 MyPins.send = async function (feats) {
   if (!feats || !feats.length) return;
   const text = MyPins.buildMessage(feats);
-  const canShare = !!navigator.share;
+  const canShare = !!navigator.share, direct = !!CONFIG.submitUrl;       // submitUrl があれば、アプリから直接送れる
   const buttons = [{ label: t('btnCancel'), value: null }];
-  if (CONFIG.contactEmail) buttons.push({ label: t('sendMail'), value: 'mail' });
-  buttons.push({ label: t('sendCopy'), value: 'copy', variant: canShare ? '' : 'primary' });
-  if (canShare) buttons.push({ label: t('sendShare'), value: 'share', variant: 'primary' });
-  const v = await dialog({ title: t('sendTitle'), message: t('sendMsg'), buttons });
-  if (v === 'copy') copyText(text, t('sendCopied'));
+  if (direct) {
+    buttons.push({ label: t('sendCopy'), value: 'copy' });
+    buttons.push({ label: t('sendNow'), value: 'post', variant: 'primary' });
+  } else {
+    if (CONFIG.contactEmail) buttons.push({ label: t('sendMail'), value: 'mail' });
+    buttons.push({ label: t('sendCopy'), value: 'copy', variant: canShare ? '' : 'primary' });
+    if (canShare) buttons.push({ label: t('sendShare'), value: 'share', variant: 'primary' });
+  }
+  const v = await dialog({ title: t('sendTitle'), message: t(direct ? 'sendMsgDirect' : 'sendMsg'), buttons });
+  if (v === 'post') {
+    const sending = toast(t('sendSending'), { ms: 20000 });
+    try {
+      await Sheet.submit(feats);
+      feats.forEach(f => { f.properties.sentAt = nowISO(); });
+      MyPins.save();
+      sending.dismiss();
+      toast(t('sendOk'), { ms: 8000 });
+      if (Panel.isOpen('detail') || Panel.isOpen('info')) Panel.refresh();
+    } catch (e) {
+      console.warn(e);
+      sending.dismiss();
+      toast(t('sendFail'), { tone: 'warn', ms: 9000 });
+    }
+  }
+  else if (v === 'copy') copyText(text, t('sendCopied'));
   else if (v === 'mail') location.href = 'mailto:' + CONFIG.contactEmail + '?subject=' + encodeURIComponent(t('sendHeader')) + '&body=' + encodeURIComponent(text);
   else if (v === 'share') {
     try { await navigator.share({ title: t('sendHeader'), text: text }); }

@@ -398,8 +398,11 @@ function renderHome(body) {
     '<button type="button" class="btn btn-md btn-accent" id="h-export">' + ic('download', 16) + '書き出し</button>' +
     '<button type="button" class="btn btn-md" id="h-import">' + ic('upload', 16) + '読み込み</button>' +
     '<button type="button" class="btn btn-md" id="h-csv">' + ic('doc', 16) + 'CSV</button></div>' +
-    '<button type="button" class="btn btn-md btn-block" id="h-subs">' + ic('send', 16) + '利用者の提案を取り込む</button>' +
-    '<p class="muted small">「書き出し」の2ファイル（hazards.geojson・categories.json）を、GitHub の data フォルダに上書きアップロードすると、公開版に反映されます。</p>' +
+    '<button type="button" class="btn btn-md btn-block" id="h-sheet">' + ic('copy', 16) + 'シート用にコピー（全件）</button>' +
+    '<button type="button" class="btn btn-md btn-block" id="h-subs">' + ic('send', 16) + '利用者の提案を取り込む（メッセージ貼り付け）</button>' +
+    (CONFIG.sheetCsvUrl
+      ? '<div class="note note-info">' + ic('info', 15) + '<span>公開データは、<b>スプレッドシート</b>から読み込んでいます。ここでの編集を公開するには、「シート用にコピー」→ シートの「ピン」タブのA1に貼り付け、を行います。</span></div>'
+      : '<p class="muted small">「書き出し」の2ファイル（hazards.geojson・categories.json）を、GitHub の data フォルダに上書きアップロードすると、公開版に反映されます。</p>') +
     '<h3 class="sec">設定</h3>' +
     '<button type="button" class="btn btn-md btn-block" id="h-cats">' + ic('tag', 16) + '種別・危険度の編集</button>' +
     '<button type="button" class="btn btn-md btn-block btn-danger-ghost" id="h-reset">' + ic('trash', 16) + '編集内容を破棄</button>' +
@@ -417,6 +420,7 @@ function renderHome(body) {
   on('#h-import', importFiles);
   on('#h-csv', exportCSV);
   on('#h-subs', () => Edit.openImport());
+  on('#h-sheet', () => copyText(Sheet.toTSV(sortedHazards()), 'コピーしました。スプレッドシートの「ピン」タブの A1 を選んで、貼り付けてください（今ある内容は置き換わります）'));
   on('#h-cats', openCategoryEditor);
   on('#h-reset', async () => {
     if (!(await confirmBox('編集内容を破棄しますか？', 'このブラウザに保存した編集内容を消して、公開中のデータに戻します。先に「書き出し」で保存しておくことをおすすめします。', '破棄する', true))) return;

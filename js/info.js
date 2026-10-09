@@ -30,6 +30,9 @@ function openInfo() {
         '<li><a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">' + esc(t('creditGSI')) + ic('external', 12) + '</a></li>' +
         '<li><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">' + esc(t('creditOSM')) + ic('external', 12) + '</a></li>' +
         '<li><a href="https://leafletjs.com" target="_blank" rel="noopener">' + esc(t('creditLeaflet')) + ic('external', 12) + '</a></li></ul>' +
+        (Sheet.info.source !== 'file' && Sheet.info.at
+          ? '<p class="muted small">' + esc(t('dataUpdated', { d: new Date(Sheet.info.at).toLocaleString(lang === 'ja' ? 'ja-JP' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }) })) +
+            (Sheet.info.source === 'cache' ? ' · ' + esc(t('dataCached')) : '') + '</p>' : '') +
         '<p class="muted small">' + esc(t('noindexNote')) + '</p>';
       if (nMine) {
         $('#i-msend', body).onclick = () => MyPins.send(MyPins.features);
