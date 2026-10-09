@@ -1,6 +1,6 @@
 {
   "_note": "sheetCsvUrl：スプレッドシートの「ピン」シートを『ウェブに公開（CSV）』したURL。入れると、地図はシートから読み込みます。submitUrl：Apps Script のウェブアプリのURL。入れると、利用者の「運営に送る」が、シートの「提案」に自動で入ります。contactEmail：運営のメールアドレス（submitUrl が空のときの、メール送信用）。どれも、空のままで動きます。詳しくは README の13章。",
   "sheetCsvUrl": "https://docs.google.com/spreadsheets/d/e/2PACX-1vR29hMzEmZ6CFbB-Uf41kVOh_QfuaRhe0OU3_We-U8b0pQQMIzm3VJJtbEORvdtZH4VLi5bsM_YxGgU/pub?gid=422375277&single=true&output=csv",
-  "submitUrl": "",
+  "submitUrl": "https://script.google.com/macros/s/AKfycbzMxtOZaxtCAyYScqCrhwXAlZzpO8-i8RzrmOza6CuAkQeZ8FW8TH-9Z4LTTYVBUW6Y/exec",
   "contactEmail": ""
 }
